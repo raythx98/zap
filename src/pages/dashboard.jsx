@@ -55,13 +55,12 @@ const Dashboard = () => {
       <div className="relative group">
         <Input
           type="text"
-          placeholder="Filter Links..."
+          placeholder="Filter Links by Title..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-4 pr-10 py-6 bg-gray-900 border-gray-800 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
         />
       </div>
-      {error && <Error message={error?.message} />}
       {(filteredUrls || []).map((url, i) => (
         <LinkCard key={i} url={url} fetchUrls={fnUrls} />
       ))}

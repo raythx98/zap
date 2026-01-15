@@ -10,7 +10,7 @@ import {
 import {Button} from "./ui/button";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {useEffect, useState} from "react";
-import * as Yup from "yup";
+import {z} from "zod";
 import Error from "./error";
 import {login} from "@/api/apiAuth";
 import {CreateLink} from "@/components/create-link";
@@ -21,7 +21,6 @@ import { toast } from "sonner";
 
 const Login = () => {
   let [searchParams] = useSearchParams();
-  const longLink = searchParams.get("createNew");
   const isLoggedIn = searchParams.get("isLoggedIn");
 
   const navigate = useNavigate();
@@ -41,52 +40,50 @@ const Login = () => {
   };
 
   const {loading, error, fn: fnLogin, data} = useFetch(login, formData);
-  const {fetchUser} = UrlState();
+  const {setIsAuthenticated} = UrlState();
 
   useEffect(() => {
     if (error === null && data) {
-      fetchUser();
+      setIsAuthenticated(true);
       toast.success("Logged in successfully!");
-      navigate(`/dashboard?isLoggedIn=true${longLink ? `&createNew=${longLink}` : ""}`);
+      navigate("/dashboard?isLoggedIn=true");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, data]);
 
   const handleLogin = async () => {
-    setErrors([]);
+    setErrors({});
     try {
-      const schema = Yup.object().shape({
-        email: Yup.string()
+      const schema = z.object({
+        email: z
+          .string()
+          .min(1, "Email is required")
           .email("Invalid email")
-          .required("Email is required")
           .max(255, "Email must be at most 255 characters"),
-        password: Yup.string()
+        password: z
+          .string()
           .min(6, "Password must be at least 6 characters")
-          .max(255, "Password must be at most 255 characters")
-          .required("Password is required"),
+          .max(255, "Password must be at most 255 characters"),
       });
 
-      await schema.validate(formData, {abortEarly: false});
+      schema.parse(formData);
       await fnLogin();
     } catch (e) {
-      const newErrors = {};
-
-      e?.inner?.forEach((err) => {
-        newErrors[err.path] = err.message;
-      });
-
-      setErrors(newErrors);
+      if (e instanceof z.ZodError) {
+        const newErrors = {};
+        e.issues.forEach((err) => {
+          newErrors[err.path[0]] = err.message;
+        });
+        setErrors(newErrors);
+      } else {
+        // Handle other errors if necessary
+      }
     }
   };
 
   return (
     <Card className="bg-gray-900 border-gray-800 rounded-2xl shadow-2xl p-2">
-      {error && (
-        <CardHeader>
-          <Error message={error.message} />
-        </CardHeader>
-      )}
-      <CardContent className="space-y-6 pt-4">
+      <CardContent className="space-y-6">
         <div className="space-y-2">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email Address</span>
           <Input

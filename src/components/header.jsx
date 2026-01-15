@@ -18,71 +18,138 @@ import {
 import {useState} from "react";
 
 const Header = () => {
+
   const {loading, fn: fnLogout} = useFetch(logout);
+
   const navigate = useNavigate();
+
   const location = useLocation();
+
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
-  const {user, fetchUser} = UrlState();
+
+
+  const {isAuthenticated, setIsAuthenticated} = UrlState();
+
+
 
   const handleLogout = () => {
+
     fnLogout().then(() => {
-      fetchUser();
+
+      setIsAuthenticated(false);
+
       setIsLogoutModalOpen(false);
+
       toast.success("Logged out successfully!");
+
       navigate("/auth");
+
     });
+
   };
 
+
+
   const isLandingPage = location.pathname === "/";
+
   const isLinkPage = location.pathname.startsWith("/link/");
 
+
+
   return (
+
     <header className="sticky top-0 z-50 w-full border-b border-gray-800/50 bg-background/80 backdrop-blur-md">
-      <nav className="container py-2 flex justify-between items-center h-14">
+
+      <nav className="container py-2 flex justify-between items-center">
+
         <div className="flex items-center gap-4 w-32">
+
           {isLandingPage ? (
-            user ? (
+
+            isAuthenticated ? (
+
               <Button 
+
                 variant="secondary" 
-                onClick={() => navigate("/dashboard")} 
+
+                onClick={() => navigate("/dashboard")}
+
                 className="font-bold flex items-center gap-2 shadow-sm"
+
               >
+
                 <LinkIcon className="h-4 w-4" />
+
                 <span>Dashboard</span>
+
               </Button>
+
             ) : null
+
           ) : isLinkPage ? (
+
             <Button 
+
               variant="secondary" 
-              onClick={() => navigate("/dashboard")} 
+
+              onClick={() => navigate("/dashboard")}
+
               className="font-bold flex items-center gap-2 shadow-sm"
+
             >
+
               <LinkIcon className="h-4 w-4" />
+
               <span>Dashboard</span>
+
             </Button>
+
           ) : (
+
             <Button 
+
               variant="secondary" 
-              onClick={() => navigate("/")} 
+
+              onClick={() => navigate("/")}
+
               className="font-bold flex items-center gap-2 shadow-sm"
+
             >
+
               <Home className="h-4 w-4" />
+
               <span>Home</span>
+
             </Button>
+
           )}
+
         </div>
+
         
+
         <div className="flex gap-4">
-          {!user ? (
+
+          {!isAuthenticated ? (
+
             <Button 
-              onClick={() => navigate("/auth")} 
+
+              onClick={() => navigate("/auth")}
+
               className="flex items-center gap-2 font-semibold"
+
             >
+
               <LogIn className="h-4 w-4" />
+
               <span>Login</span>
+
             </Button>
+
           ) : (
+
+
             <>
               <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
                 <DialogTrigger asChild>

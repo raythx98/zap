@@ -67,12 +67,14 @@ const LinkCard = ({url = [], fetchUrls}) => {
         />
       </div>
       <div className="flex flex-col flex-1 gap-2 min-w-0 w-full overflow-hidden">
-        <div className="flex flex-col min-w-0">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</span>
-          <span className="text-2xl font-extrabold text-white truncate w-full">
-            {url?.title}
-          </span>
-        </div>
+        {url?.title && (
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</span>
+            <span className="text-2xl font-extrabold text-white truncate w-full">
+              {url?.title}
+            </span>
+          </div>
+        )}
         
         <div className="flex flex-col min-w-0">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Short Link</span>

@@ -1,22 +1,23 @@
 /* eslint-disable react/prop-types */
 
-import {createContext, useContext, useEffect} from "react";
-import {getCurrentUser} from "./api/apiAuth";
-import useFetch from "./hooks/use-fetch";
+import {createContext, useContext, useEffect, useState} from "react";
+import {isAuthenticated as checkAuth} from "./helper/session";
 
 const UrlContext = createContext();
 
 const UrlProvider = ({children}) => {
-  const {data: user, loading, fn: fetchUser} = useFetch(getCurrentUser);
-
-  const isAuthenticated = user?.role === "authenticated";
+  const [isAuthenticated, setIsAuthenticated] = useState(checkAuth());
 
   useEffect(() => {
-    fetchUser();
+    setIsAuthenticated(checkAuth());
   }, []);
 
+  const logoutAction = () => {
+    setIsAuthenticated(false);
+  };
+
   return (
-    <UrlContext.Provider value={{user, fetchUser, loading, isAuthenticated}}>
+    <UrlContext.Provider value={{isAuthenticated, setIsAuthenticated, logoutAction}}>
       {children}
     </UrlContext.Provider>
   );

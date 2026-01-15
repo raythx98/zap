@@ -1,91 +1,76 @@
-import { getAccessToken, getRefreshToken, set } from "@/helper/session";
+import axios from "axios";
+import { getAccessToken, getRefreshToken, set, remove } from "@/helper/session";
+import { parseError } from "@/lib/error-handler";
 
 const apiUrl = import.meta.env.VITE_API_URL || "";
 const basicAuthToken = btoa(`${import.meta.env.VITE_BASIC_AUTH_USERNAME || ""}:${import.meta.env.VITE_BASIC_AUTH_PASSWORD || ""}`);
 
-export const genericErrorMessage = "Something went wrong, please try again later";
+// Instance for regular requests
+const api = axios.create({
+  baseURL: apiUrl,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
-async function execute(endpoint, method = 'GET', body = null) {
-    const url = `${apiUrl}${endpoint}`;
-    const options = {
-        method,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${getAccessToken()}`
+// Instance for auth/basic requests
+const authApi = axios.create({
+  baseURL: apiUrl,
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Basic ${basicAuthToken}`,
+  },
+});
+
+// Request Interceptor: Attach Token
+api.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response Interceptor: Handle 401 & Refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const refreshToken = getRefreshToken();
+
+      if (refreshToken) {
+        try {
+          const { data } = await axios.post(`${apiUrl}auth/v1/refresh`, {}, {
+            headers: { Authorization: `Bearer ${refreshToken}` }
+          });
+          
+          set(data); // Save new tokens
+          originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+          return api(originalRequest); // Retry original request
+        } catch (refreshError) {
+          remove();
+          window.location.href = `${import.meta.env.BASE_URL}auth?session_expired=true`;
+          return Promise.reject(refreshError);
         }
-    };
-
-    if (body) {
-        options.body = JSON.stringify(body);
-    }
-
-    var response = await fetch(url, options);
-    if (response.status === 401 && getRefreshToken()) {
-      try {
-        const newTokens = await refresh(); // refresh tokens
-        set(newTokens); // update localStorage
-        options.headers.Authorization = `Bearer ${newTokens.access_token}`; // use new access token
-        response = await fetch(url, options); // retry request
-        if (!response.ok) {
-          throw new Error(genericErrorMessage);
-        }
-      } catch (error) {
-        localStorage.clear(); // clear tokens
-        window.location.href = '/auth'; // redirect to login
-        throw new Error('Unauthorized. Please log in again. ' + error);
+      } else {
+        remove();
+        window.location.href = `${import.meta.env.BASE_URL}auth?session_expired=true`;
       }
     }
 
-    return response
-}
-
-async function executeBasic(endpoint, method = 'GET', body = null) {
-  const url = `${apiUrl}${endpoint}`;
-  const options = {
-      method,
-      headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${basicAuthToken}`
-      }
-  };
-
-  if (body) {
-      options.body = JSON.stringify(body);
+    return Promise.reject(error);
   }
+);
 
-  return await fetch(url, options);
-}
+// Simplified exports
+export const get = (url) => api.get(url).then(res => res.data);
+export const post = (url, body) => api.post(url, body).then(res => res.data);
+export const del = (url) => api.delete(url).then(res => res.data);
 
-async function refresh() {
-  const url = `${apiUrl}auth/v1/refresh`;
-  const options = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getRefreshToken()}`
-    }
-  };
+export const postBasic = (url, body) => authApi.post(url, body).then(res => res.data);
+export const getBasic = (url) => authApi.get(url).then(res => res.data);
 
-  var response = await fetch(url, options);
-  if (!response.ok) {
-    throw new Error(genericErrorMessage);
-  }
-
-  return response.json();
-}
-
-export async function postBasic(endpoint, body) {
-  return await executeBasic(endpoint, 'POST', body);
-}
-
-export async function post(endpoint, body) {
-  return await execute(endpoint, 'POST', body);
-}
-
-export async function del(endpoint, body) {
-  return await execute(endpoint, 'DELETE', body);
-}
-
-export async function get(endpoint) {
-  return await execute(endpoint);
-}
+export default api;

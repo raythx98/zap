@@ -3,33 +3,50 @@
 ## Project Overview
 - **Name:** Zap
 - **Type:** React Web Application (Vite)
-- **Status:** Modernized and configured for multi-environment deployment.
+- **Status:** Modernized and optimized for high-performance link management.
 
-## Deployment & Environments
-- **Hosting:** Configured for GitHub Pages (`/zap/` subpath) in production.
-- **Dynamic Base Path:**
-    - **Development:** Uses `/` (accessible at `http://localhost:5173`).
-    - **Production:** Uses `/zap/` (controlled via `vite.config.js` and `import.meta.env.BASE_URL`).
-- **Environment Variables:**
-    - `.env.development`: Points to local API (default `http://localhost:8000/api/`).
-    - `.env.production`: Points to production API.
-- **GitHub Actions:** Automatically deploys to GitHub Pages on push to `master`, handles `404.html` hack for SPA routing.
+## Deployment & Multi-Environment Setup
+- **Hosting:** Primary target is GitHub Pages (`/zap/` subpath).
+- **Base Path Strategy:** 
+    - **Development:** Root-based (`/`) for standard `localhost:5173` access.
+    - **Production:** Subdirectory-based (`/zap/`).
+    - **Implementation:** Controlled via conditional `base` in `vite.config.js` and `import.meta.env.BASE_URL` for the Router `basename`.
+- **Environment Management:** 
+    - Dedicated `.env.development` (local API) and `.env.production` (remote API).
+    - `src/api/api.js` includes a safety layer to prevent `undefined` string concatenation if environment variables are missing.
 
-## Architectural Choices
-- **Routing:** Uses `react-router-dom` with `createBrowserRouter` and dynamic `basename`.
-- **UI Framework:** Tailwind CSS with a consistent "Zap Dark" theme (`bg-gray-900`, `border-gray-800`, `rounded-2xl`).
-- **Icons:** Standardized on `lucide-react` for a clean, consistent look.
-- **Notifications:** Integrated `sonner` for global toast notifications (Copy, Create, Delete, Auth actions).
-- **Modals:** Uses `@radix-ui/react-dialog` for confirmation modals (Logout, Delete) and the Create Link flow.
+## Architectural Patterns
+- **API Management:** Fully migrated from `fetch` to **Axios**.
+    - **Interceptors:** Implemented global request interceptors for token attachment and response interceptors for seamless 401/Refresh handling and session expiration logic.
+    - **Service Layer:** Refactored into a minimalist pattern where services handle data normalization while interceptors handle infrastructure concerns (auth, retries, parsing).
+- **Layout System (`AppLayout.jsx`):** 
+    - Uses a `flex flex-col` structure to enable perfect vertical centering.
+    - **Conditional Centering:** The Hero section uses a `pb-14` offset to balance the sticky header, ensuring true visual centering on the landing page.
+- **Global UI Framework:**
+    - **Theme:** Consistent "Zap Dark" aesthetic (`bg-gray-900`, `border-gray-800`, `rounded-2xl`).
+    - **Fluidity:** Container is 100% width on mobile/tablet and caps at a focused `1000px` on desktop.
+- **State & Notifications:**
+    - **Toasts:** Standardized on `sonner` for all feedback (Copy, Delete, Create, Auth).
+    - **Modals:** `@radix-ui/react-dialog` used for critical confirmations (Logout, Delete) and the Create Link flow.
 
-## UI/UX Patterns
-- **Container Strategy:** Fluid layout on mobile/tablet, capped at a focused `1000px` max-width on desktops.
-- **Landing Page:** Full-screen Hero section, vertically centered below the sticky header. The FAQ section has been removed for a cleaner initial experience.
-- **Link Cards:** Revamped with clear uppercase labels (e.g., "TITLE"), robust truncation with ellipses, and circular action buttons with purpose-specific hover colors.
-- **Auth Flow:** Modernized Login/Signup with labeled inputs and a streamlined "Wait! Let's get you set up" header for landing-page redirects.
-- **Mobile First:** All inputs are `text-base` (16px) to prevent iOS auto-zoom. Horizontal layout for cards is maintained down to the `sm` breakpoint.
+## Data Visualization & Analytics
+- **Responsive Stats:** Replaced heavy chart libraries with a custom, CSS-based horizontal progress bar system (`DeviceStats`, `LocationStats`).
+- **Optimization:** Analytics are limited to the **Top 5** results with an "& X others..." summary to maintain a clean vertical estate.
+- **Color Coding:** Standardized colors for differentiation: **Blue** for Location and **Green** for Device data.
+- **Data Cleaning (`apiUrls.js`):** 
+    - Normalizes `ua-parser-js` device types (e.g., `undefined` -> `desktop`).
+    - Standardizes `ipapi.co` location data to "Unknown" if fields are missing.
 
-## Technical Details
-- **QR Code Strategy:** Generated client-side using `react-qrcode-logo`. Construction uses `window.location.origin + import.meta.env.BASE_URL + path` to ensure accuracy in both dev and prod.
-- **Button Component:** Enhanced global `Button` component with automatic `truncate` and `flex` centering for content (icons + text).
-- **Layout Logic:** `AppLayout` handles conditional vertical centering for the landing page while maintaining standard top-alignment for internal pages.
+## UI/UX Specifics
+- **Link Cards:** 
+    - **Robust Truncation:** Uses a combination of `min-w-0`, `w-full`, and `truncate` to ensure no text ever breaks the card box, even when wrapped.
+    - **Action Buttons:** Circular, high-contrast buttons with purpose-specific hover states (Blue/Green/Red).
+- **Auth Flow:** 
+    - Redundant headers removed; context is provided by stylized active tabs.
+    - Autofill Logic: Redirects from landing page trigger the Create Link modal automatically only if a URL is actually present in the query params.
+- **Mobile Polish:**
+    - **iOS Zoom Fix:** All inputs set to `text-base` (16px) to prevent automatic browser zooming on focus.
+    - **Breakpoint Control:** Cards maintain a horizontal layout down to the `sm` breakpoint to maximize space usage.
+
+## Assets
+- **Favicon:** Custom-designed `favicon.svg` featuring a lightning bolt "Z" to match the "Zap" brand identity.

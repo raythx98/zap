@@ -13,7 +13,7 @@ import {Input} from "@/components/ui/input";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {useEffect, useState} from "react";
 import Error from "./error";
-import * as yup from "yup";
+import {z} from "zod";
 import useFetch from "@/hooks/use-fetch";
 import {createUrl} from "@/api/apiUrls";
 import {BeatLoader} from "react-spinners";
@@ -27,43 +27,21 @@ export function CreateLink({
   variant = "destructive",
   className = ""
 }) {
-  const {user} = UrlState();
-
   const navigate = useNavigate();
 
   let [searchParams, setSearchParams] = useSearchParams();
-  const longLink = searchParams.get("createNew");
+  const longLink = sessionStorage.getItem("urlToCreate");
   const isLoggedIn = searchParams.get("isLoggedIn");
 
   const [errors, setErrors] = useState({});
   const [formValues, setFormValues] = useState({
     title: "",
-    fullUrl: longLink ? longLink : "",
+    fullUrl: longLink || "",
     customUrl: "",
   });
   const [finalLink, setFinalLink] = useState("");
-
-  const schema = yup.object().shape({
-    title: yup
-      .string()
-      .required("Title is required")
-      .max(100, "Title must be at most 255 characters"),
-    fullUrl: yup
-      .string()
-      .url("Must be a valid URL")
-      .required("Long URL is required")
-      .max(2048, "Long URL must be at most 255 characters"),
-    customUrl: yup
-      .string()
-      .test(
-        'custom-url-check-min-4',
-        'Custom URL must be at least 4 characters',
-        password => password.length == 0 || password.length >= 4)
-      .test(
-        'custom-url-check-max-255',
-        'Custom URL must be at most 255 characters',
-        password => password.length == 0 || password.length <= 255),
-  });
+  const [suggestion, setSuggestion] = useState(null);
+  const [suggestionType, setSuggestionType] = useState("none");
 
   const handleChange = (e) => {
     setFormValues({
@@ -77,11 +55,12 @@ export function CreateLink({
     error,
     data,
     fn: fnCreateUrl,
-  } = useFetch(createUrl, {...formValues, user_id: user?.id});
+  } = useFetch(createUrl, {...formValues});
 
   useEffect(() => {
     if (error === null && data) {
       toast.success("Link created successfully!");
+      sessionStorage.removeItem("urlToCreate");
       if (isLoggedIn == "true" || buttonText == "Create New Link") {
         navigate(`/link/${data.id}`);
       } else {
@@ -112,33 +91,71 @@ export function CreateLink({
     }
   };
 
-  const createNewLink = async () => {
-    setErrors([]);
-    var proposedLink = formatLink(formValues.fullUrl);
-    var oldLink = formValues.fullUrl
-    const newErrors = {};
-    if (formValues.fullUrl != proposedLink) {
-      formValues.fullUrl = proposedLink;
-      newErrors["fullUrl"] = `Invalid URL. Corrected from '${oldLink}' to '${proposedLink}'. Please try again.`;
+  const acceptSuggestion = () => {
+    const suggestedUrl = suggestion;
+    setSuggestion(null);
+    setFormValues(prev => ({ ...prev, fullUrl: suggestedUrl }));
+    // We delay the actual creation slightly to ensure state is updated
+    setTimeout(() => createNewLink(suggestedUrl, true), 10);
+  };
+
+  const createNewLink = async (overrideUrl = null, force = false) => {
+    setErrors({});
+    const urlToValidate = overrideUrl || formValues.fullUrl;
+    const { formatted, type, isValid } = formatLink(urlToValidate);
+    
+    // If invalid, show error toast immediately
+    if (!isValid && urlToValidate.length > 0) {
+      toast.error("Please enter a valid URL (e.g. google.com)");
+      return;
     }
+
+    // If protocol was added and we're not forcing, show suggestion
+    if (!force && type !== "none") {
+      setSuggestion(formatted);
+      setSuggestionType(type);
+      return;
+    }
+
     try {
-      await schema.validate(formValues, {abortEarly: false});
+      const schema = z.object({
+        title: z
+          .string()
+          .max(100, "Title must be at most 100 characters")
+          .optional()
+          .or(z.literal("")),
+        fullUrl: z
+          .string()
+          .url("Must be a valid URL")
+          .min(1, "Long URL is required")
+          .max(2048, "Long URL must be at most 2048 characters"),
+        customUrl: z
+          .string()
+          .optional()
+          .refine(val => !val || val.length >= 4, {
+            message: "Custom URL must be at least 4 characters",
+          })
+          .refine(val => !val || val.length <= 255, {
+            message: "Custom URL must be at most 255 characters",
+          }),
+      });
 
-      if (newErrors["fullUrl"]) {
-        throw new Error("Invalid URL");
-      }
-
+      schema.parse({ ...formValues, fullUrl: formatted });
       await fnCreateUrl();
     } catch (e) {
-      e?.inner?.forEach((err) => {
-        newErrors[err.path] = err.message;
-      });
+      if (e instanceof z.ZodError) {
+        const newErrors = {};
+        e.issues.forEach((err) => {
+          newErrors[err.path[0]] = err.message;
+        });
+        setErrors(newErrors);
+      }
     }
-    setErrors(newErrors);
   };
 
   const reset = async () => {
     setFinalLink(null);
+    sessionStorage.removeItem("urlToCreate");
     setFormValues({
       title: "",
       fullUrl: "",
@@ -147,10 +164,15 @@ export function CreateLink({
   };
 
   return (
+    <>
     <Dialog
       defaultOpen={isLoggedIn == 'true' && !!longLink}
       onOpenChange={(res) => {
-        if (!res && isLoggedIn === 'true') setSearchParams({});
+        if (!res) {
+          if (isLoggedIn === 'true') setSearchParams({});
+          sessionStorage.removeItem("urlToCreate");
+          setFormValues({ title: "", fullUrl: "", customUrl: "" });
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -163,7 +185,10 @@ export function CreateLink({
 
         <div className="flex flex-col gap-6 py-4">
           <div className="space-y-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Link Title</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Link Title</span>
+              <span className="text-[10px] font-bold text-gray-600 uppercase bg-gray-800 px-1.5 py-0.5 rounded">Optional</span>
+            </div>
             <Input
               id="title"
               placeholder="e.g. My Awesome Project"
@@ -189,7 +214,10 @@ export function CreateLink({
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Custom Link (optional)</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Custom Link</span>
+              <span className="text-[10px] font-bold text-gray-600 uppercase bg-gray-800 px-1.5 py-0.5 rounded">Optional</span>
+            </div>
             <div className="flex items-center gap-2">
               <Input
                 placeholder={window.location.origin + import.meta.env.BASE_URL}
@@ -247,7 +275,7 @@ export function CreateLink({
           </div>
         )}
         
-        {error && <Error message={error?.message} />}
+        {error && null}
         
         <DialogFooter className="mt-4 sm:justify-end">
           { finalLink 
@@ -265,7 +293,7 @@ export function CreateLink({
               <Button
                 type="button"
                 variant="destructive"
-                onClick={createNewLink}
+                onClick={() => createNewLink()}
                 disabled={loading}
                 className="w-full sm:w-auto font-bold h-11 px-8"
               >
@@ -276,5 +304,42 @@ export function CreateLink({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={!!suggestion} onOpenChange={() => setSuggestion(null)}>
+      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-800 text-white rounded-2xl shadow-2xl p-6">
+        <DialogHeader>
+          <DialogTitle className="font-black text-2xl tracking-tight">
+            {suggestionType === "fixed" ? "URL Protocol Added" : "URL Formatting Cleaned"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 py-4">
+          <p className="text-gray-400">
+            {suggestionType === "fixed" 
+              ? "We noticed your link was missing a protocol. We've updated it to:" 
+              : "We've cleaned up the formatting of your URL to ensure it works correctly:"}
+          </p>
+          <div className="bg-gray-800 p-3 rounded-xl border border-gray-700 font-mono text-blue-400 break-all">
+            {suggestion}
+          </div>
+        </div>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setSuggestion(null)}
+            className="border-gray-700 hover:bg-gray-800"
+          >
+            Keep Editing
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={acceptSuggestion}
+            className="font-bold"
+          >
+            Accept & Create
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

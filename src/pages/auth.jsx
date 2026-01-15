@@ -5,27 +5,36 @@ import {UrlState} from "@/context";
 import {useEffect} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
 
+import {toast} from "sonner";
+
 function Auth() {
-  let [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const {isAuthenticated, loading} = UrlState();
-  const longLink = searchParams.get("createNew");
+  const [searchParams] = useSearchParams();
+  const {isAuthenticated, loading, logoutAction} = UrlState();
+  const longLink = sessionStorage.getItem("urlToCreate");
+
+  useEffect(() => {
+    if (searchParams.get("session_expired")) {
+      toast.error("Session expired. Please log in again.");
+      logoutAction();
+    }
+  }, [searchParams, logoutAction]);
 
   useEffect(() => {
     if (isAuthenticated && !loading)
-      navigate(`/dashboard?isLoggedIn=true${longLink ? `&createNew=${longLink}` : ""}`);
+      navigate("/dashboard?isLoggedIn=true");
   }, [isAuthenticated, loading, navigate]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] gap-6 px-4">
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight text-center">
-          {searchParams.get("createNew")
+          {longLink
             ? "Wait! Let's get you set up"
             : "Welcome to Zap"}
         </h1>
         <p className="text-gray-500 font-medium text-sm sm:text-base text-center max-w-[350px]">
-          {searchParams.get("createNew")
+          {longLink
             ? "Sign in to track analytics and manage your new link."
             : "Sign in to access click analytics, geolocation data, and custom links."}
         </p>
@@ -46,10 +55,10 @@ function Auth() {
             Signup
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="login" className="mt-6">
+        <TabsContent value="login" className="mt-4">
           <Login />
         </TabsContent>
-        <TabsContent value="signup" className="mt-6">
+        <TabsContent value="signup" className="mt-4">
           <Signup />
         </TabsContent>
       </Tabs>

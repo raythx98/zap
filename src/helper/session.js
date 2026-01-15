@@ -16,3 +16,7 @@ export function getRefreshToken() {
 export function getAccessToken() {
     return localStorage.getItem('AccessToken');
 }
+
+export function isAuthenticated() {
+    return !!getAccessToken();
+}

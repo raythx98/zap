@@ -1,33 +1,36 @@
 /* eslint-disable react/prop-types */
-import {PieChart, Pie, Cell, ResponsiveContainer} from "recharts";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+export default function DeviceStats({devices}) {
+  if (!devices || devices.length === 0) return null;
 
-export default function App({devices}) {
+  const total = devices.reduce((acc, item) => acc + item.count, 0);
+  const topDevices = devices.slice(0, 5);
+  const otherCount = devices.length - 5;
+
   return (
-    <div className="w-full h-80">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={devices}
-            labelLine={false}
-            label={({device, percent}) =>
-              `${device}: ${(percent * 100).toFixed(0)}%`
-            }
-            dataKey="count"
-            cx="50%"
-            cy="50%"
-            outerRadius="80%"
-          >
-            {devices.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
+    <div className="flex flex-col gap-4 w-full">
+      {topDevices.map((item, index) => {
+        const percentage = ((item.count / total) * 100).toFixed(0);
+        return (
+          <div key={index} className="flex flex-col gap-1">
+            <div className="flex justify-between items-center text-sm font-medium">
+              <span className="capitalize text-gray-300">{item.device}</span>
+              <span className="text-gray-500">{item.count} clicks ({percentage}%)</span>
+            </div>
+            <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-green-500 h-full rounded-full transition-all duration-500" 
+                style={{ width: `${percentage}%` }}
               />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
+            </div>
+          </div>
+        );
+      })}
+      {otherCount > 0 && (
+        <p className="text-xs text-gray-500 font-medium italic mt-1">
+          & {otherCount} other{otherCount > 1 ? 's' : ''}...
+        </p>
+      )}
     </div>
   );
 }

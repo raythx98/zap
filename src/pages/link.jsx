@@ -68,7 +68,6 @@ const LinkPage = () => {
 
   return (
     <div className="flex flex-col gap-8">
-      {error && <Error message={error?.message} />}
       {(loading) && (
         <BarLoader className="mb-4" width={"100%"} color="#36d7b7" />
       )}
@@ -76,12 +75,14 @@ const LinkPage = () => {
       <div className="flex flex-col gap-8 lg:flex-row justify-between">
         <div className="flex flex-col gap-6 lg:w-2/5">
           <div className="flex flex-col gap-6 border border-gray-800 p-8 bg-gray-900 rounded-2xl shadow-xl">
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Title</span>
-              <h1 className="text-4xl sm:text-5xl font-extrabold text-white break-all">
-                {data?.url?.title}
-              </h1>
-            </div>
+            {data?.url?.title && (
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Title</span>
+                <h1 className="text-4xl sm:text-5xl font-extrabold text-white break-all">
+                  {data?.url?.title}
+                </h1>
+              </div>
+            )}
 
             <div className="flex flex-col">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Short Link</span>

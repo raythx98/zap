@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import Error from "./error";
 import {Input} from "./ui/input";
-import * as Yup from "yup";
+import {z} from "zod";
 import {
   Card,
   CardContent,
@@ -19,9 +19,6 @@ import {UrlState} from "@/context";
 import { toast } from "sonner";
 
 const Signup = () => {
-  let [searchParams] = useSearchParams();
-  const longLink = searchParams.get("createNew");
-
   const navigate = useNavigate();
 
   const [errors, setErrors] = useState({});
@@ -41,55 +38,50 @@ const Signup = () => {
   };
 
   const {loading, error, fn: fnSignup, data} = useFetch(signup, formData);
-  const {fetchUser} = UrlState();
+  const {setIsAuthenticated} = UrlState();
 
   useEffect(() => {
     if (error === null && data) {
-      fetchUser();
+      setIsAuthenticated(true);
       toast.success("Account created successfully!");
-      navigate(`/dashboard?isLoggedIn=true${longLink ? `&createNew=${longLink}` : ""}`);
+      navigate("/dashboard?isLoggedIn=true");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, data]);
 
   const handleSignup = async () => {
-    setErrors([]);
+    setErrors({});
     try {
-      const schema = Yup.object().shape({
-        email: Yup.string()
+      const schema = z.object({
+        email: z
+          .string()
+          .min(1, "Email is required")
           .email("Invalid email")
-          .max(255, "Email must be at most 255 characters")
-          .required("Email is required"),
-        password: Yup.string()
+          .max(255, "Email must be at most 255 characters"),
+        password: z
+          .string()
           .min(6, "Password must be at least 6 characters")
-          .max(255, "Password must be at most 255 characters")
-          .required("Password is required"),
+          .max(255, "Password must be at most 255 characters"),
       });
 
-      await schema.validate(formData, {abortEarly: false});
+      schema.parse(formData);
       await fnSignup();
-    } catch (error) {
-      const newErrors = {};
-      if (error?.inner) {
-        error.inner.forEach((err) => {
-          newErrors[err.path] = err.message;
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        const newErrors = {};
+        e.issues.forEach((err) => {
+          newErrors[err.path[0]] = err.message;
         });
-
         setErrors(newErrors);
       } else {
-        setErrors({api: error.message});
+        setErrors({api: e.message});
       }
     }
   };
 
   return (
     <Card className="bg-gray-900 border-gray-800 rounded-2xl shadow-2xl p-2">
-      {error && (
-        <CardHeader>
-          <Error message={error?.message} />
-        </CardHeader>
-      )}
-      <CardContent className="space-y-6 pt-4">
+      <CardContent className="space-y-6">
         <div className="space-y-2">
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email Address</span>
           <Input
