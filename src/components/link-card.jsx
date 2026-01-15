@@ -5,12 +5,24 @@ import {Button} from "./ui/button";
 import useFetch from "@/hooks/use-fetch";
 import {deleteUrl} from "@/api/apiUrls";
 import {BeatLoader} from "react-spinners";
+import {QRCode} from "react-qrcode-logo";
 import Error from "../components/error";
 
 const LinkCard = ({url = [], fetchUrls}) => {
+  // Fix URL generation to include base path
+  const shortUrl = `${window.location.origin}${import.meta.env.BASE_URL}${url?.custom_url || url.short_url}`;
+
   const downloadImage = () => {
-    const imageUrl = url?.qr;
-    window.open(imageUrl, '_blank');
+    const canvas = document.getElementById(`qr-${url?.id}`);
+    if (canvas) {
+      const pngUrl = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.href = pngUrl;
+      downloadLink.download = `${url?.title || "qr-code"}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
   };
 
   const {loading: loadingDelete, error, fn: fnDelete} = useFetch(deleteUrl, url.id);
@@ -19,17 +31,20 @@ const LinkCard = ({url = [], fetchUrls}) => {
     <>
       {error && <span className="text-sm text-red-400 ml-auto">{error?.message}</span>}
       <div className="flex flex-col md:flex-row gap-5 border p-4 bg-gray-900 rounded-lg">
-        <img
-          src={url?.qr}
-          className="h-32 object-contain ring ring-blue-500 self-start"
-          alt="qr code"
-        />
+        <div className="h-32 object-contain ring ring-blue-500 self-start bg-white rounded-sm">
+          <QRCode
+            id={`qr-${url?.id}`}
+            value={shortUrl}
+            size={128}
+            quietZone={2}
+          />
+        </div>
         <Link to={`/link/${url?.id}`} className="flex flex-col flex-1 max-w-full">
           <span className="text-3xl font-extrabold hover:underline cursor-pointer break-all">
             {url?.title}
           </span>
           <span className="text-2xl text-blue-400 font-bold hover:underline cursor-pointer break-all">
-            {window.location.origin}/{url?.custom_url ? url?.custom_url : url.short_url}
+            {shortUrl}
           </span>
           <span className="flex items-center gap-1 hover:underline cursor-pointer break-all">
             <LinkIcon className="p-1" />
@@ -43,7 +58,7 @@ const LinkCard = ({url = [], fetchUrls}) => {
           <Button
             variant="ghost"
             onClick={() =>
-              navigator.clipboard.writeText(`${window.location.origin}/${url?.short_url}`)
+              navigator.clipboard.writeText(shortUrl)
             }
           >
             <Copy />

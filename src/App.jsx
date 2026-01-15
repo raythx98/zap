@@ -45,7 +45,9 @@ const router = createBrowserRouter([
       },
     ],
   },
-]);
+], {
+  basename: "/zap",
+});
 
 function App() {
   return (

@@ -1,26 +1,34 @@
-# Full Stack URL Shortener
-Frontend has been [forked](https://github.com/piyush-eon/url-shortener) with significant changes.
+# Full Stack URL Shortener (Zap)
 
-## Frontend
-- React JS
-- Tailwind CSS
-- Shadcn UI
+Frontend has been [forked](https://github.com/piyush-eon/url-shortener) with significant changes and optimization for static hosting.
 
-## Backend & Infra
-Url Shortener [Backend Repository](https://github.com/raythx98/url-shortener)
+## Features
+- **URL Shortening:** Create short, manageable links.
+- **Analytics:** Track redirects, geolocation (city/country), and device data.
+- **Personal Dashboard:** Manage all your links in one place.
+- **Secure Auth:** Secure password storage following OWASP recommendations.
 
-## Setup 
-You will need to set up the following in Github Secrets
-- BASIC_AUTH_PASSWORD
-- EC2_HOST
-- EC2_USER
-- SSH_PRIVATE_KEY
+## Tech Stack
+- **Frontend:** React JS (Vite), Tailwind CSS, Shadcn UI
+- **Backend:** [Go API](https://github.com/raythx98/url-shortener) hosted at `https://129.150.49.141.sslip.io/api/`
 
-### Generate Secrets
-An easy way to generate cryptographically secure random strings is to use the following command:
-```bash
-python -c 'import secrets; print(secrets.token_urlsafe(32))'
-```
+## Deployment
+This project is configured for **GitHub Pages** deployment.
 
-### Deploy to EC2
-Use Github Actions to deploy the application to EC2 instance
+### Automatic Deployment
+Pushing to the `master` branch triggers the GitHub Actions workflow which:
+1. Builds the Vite application with the necessary environment variables.
+2. Creates a `404.html` fallback to support React Router SPAs on GitHub Pages.
+3. Deploys to the `/zap` subdirectory.
+
+### GitHub Secrets
+To enable deployment, you must configure the following secret in your repository:
+- `BASIC_AUTH_PASSWORD`: The password for basic authentication with the backend API.
+
+Note: Other variables like `VITE_API_URL` and `VITE_BASIC_AUTH_USERNAME` are currently managed within the workflow file.
+
+## Setup & Development
+1. Clone the repository.
+2. Install dependencies: `npm install`.
+3. Create a `.env` file with `VITE_API_URL`, `VITE_BASIC_AUTH_USERNAME`, and `VITE_BASIC_AUTH_PASSWORD`.
+4. Run locally: `npm run dev`.

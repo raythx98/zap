@@ -8,14 +8,11 @@ import {Copy, QrCode, LinkIcon, Trash} from "lucide-react";
 import {useEffect} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {BarLoader, BeatLoader} from "react-spinners";
+import {QRCode} from "react-qrcode-logo";
 import Error from "../components/error";
 
 
 const LinkPage = () => {
-  const downloadImage = () => {
-    const imageUrl = data?.url?.qr;
-    window.open(imageUrl, '_blank');
-  };
   const navigate = useNavigate();
   const {id} = useParams();
   const {
@@ -35,6 +32,20 @@ const LinkPage = () => {
   if (data?.url) {
     link = data?.url?.custom_url ? data?.url?.custom_url : data?.url.short_url;
   }
+  const fullLink = `${window.location.origin}${import.meta.env.BASE_URL}${link}`;
+
+  const downloadImage = () => {
+    const canvas = document.getElementById("qr-code-canvas");
+    if (canvas) {
+      const pngUrl = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.href = pngUrl;
+      downloadLink.download = `${data?.url?.title || "qr-code"}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+  };
 
   return (
     <>
@@ -48,11 +59,11 @@ const LinkPage = () => {
             {data?.url?.title}
           </span>
           <a
-            href={`${window.location.origin}/${link}`}
+            href={fullLink}
             target="_blank"
             className="text-3xl sm:text-4xl text-blue-400 font-bold hover:underline cursor-pointer break-all"
           >
-            {window.location.origin}/{link}
+            {fullLink}
           </a>
           <a
             href={data?.url?.full_url}
@@ -69,7 +80,7 @@ const LinkPage = () => {
             <Button
               variant="ghost"
               onClick={() =>
-                navigator.clipboard.writeText(`${window.location.origin}/${link}`)
+                navigator.clipboard.writeText(fullLink)
               }
             >
               <Copy />
@@ -93,11 +104,15 @@ const LinkPage = () => {
               )}
             </Button>
           </div>
-          <img
-            src={data?.url?.qr}
-            className="w-full self-center sm:self-start ring ring-blue-500 p-1 object-contain"
-            alt="qr code"
-          />
+          <div className="w-full self-center sm:self-start ring ring-blue-500 p-1 object-contain bg-white flex justify-center rounded-lg">
+            <QRCode
+                id="qr-code-canvas"
+                value={fullLink}
+                size={250}
+                style={{ width: '100%', height: 'auto', maxWidth: '100%' }}
+                quietZone={2}
+            />
+          </div>
         </div>
 
         <Card className="sm:w-3/5">

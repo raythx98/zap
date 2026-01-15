@@ -10,9 +10,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {Input} from "@/components/ui/input";
-import {Card} from "./ui/card";
 import {useNavigate, useSearchParams} from "react-router-dom";
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import Error from "./error";
 import * as yup from "yup";
 import useFetch from "@/hooks/use-fetch";
@@ -20,6 +19,7 @@ import {createUrl} from "@/api/apiUrls";
 import {BeatLoader} from "react-spinners";
 import {UrlState} from "@/context";
 import { FaCheckCircle } from 'react-icons/fa'; 
+import {QRCode} from "react-qrcode-logo";
 
 export function CreateLink({ buttonText = "Create New Link" }) {
   const {user} = UrlState();
@@ -85,27 +85,23 @@ export function CreateLink({ buttonText = "Create New Link" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, data]);
 
+  const fullShortUrl = `${window.location.origin}${import.meta.env.BASE_URL}${finalLink}`;
+
   const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/${data.short_url}`)
+    navigator.clipboard.writeText(fullShortUrl)
   };
 
   const downloadImage = () => {
-    const imageUrl = data.qr;
-    const fileName = data.title; // Desired file name for the downloaded image
-
-    // Create an anchor element
-    const anchor = document.createElement("a");
-    anchor.href = imageUrl;
-    anchor.download = fileName;
-
-    // Append the anchor to the body
-    document.body.appendChild(anchor);
-
-    // Trigger the download by simulating a click event
-    anchor.click();
-
-    // Remove the anchor from the document
-    document.body.removeChild(anchor);
+    const canvas = document.getElementById("qr-create-link");
+    if (canvas) {
+      const pngUrl = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.href = pngUrl;
+      downloadLink.download = `${formValues.title || "qr-code"}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
   };
 
   const createNewLink = async () => {
@@ -176,8 +172,8 @@ export function CreateLink({ buttonText = "Create New Link" }) {
         <div className="flex items-center gap-2">
           {/* <Card className="p-2"></Card> / */}
           <Input
-            placeholder={window.location.origin}
-            value={window.location.origin}
+            placeholder={window.location.origin + import.meta.env.BASE_URL}
+            value={window.location.origin + import.meta.env.BASE_URL}
             disabled={true}
           /> /
           <Input
@@ -194,8 +190,8 @@ export function CreateLink({ buttonText = "Create New Link" }) {
             <FaCheckCircle className="text-green-500 ml-1 mr-3" size={40}/>
             <Input
               className="flex-grow p-2 mr-2"
-              placeholder={`${window.location.origin}/${finalLink}`}
-              value={`${window.location.origin}/${finalLink}`}
+              placeholder={fullShortUrl}
+              value={fullShortUrl}
               disabled={true}
             /> 
             <Button
@@ -207,6 +203,14 @@ export function CreateLink({ buttonText = "Create New Link" }) {
             <Button variant="ghost" onClick={downloadImage}>
               <QrCode />
             </Button>
+            <div style={{ display: 'none' }}>
+              <QRCode
+                id="qr-create-link"
+                value={fullShortUrl}
+                size={250}
+                quietZone={2}
+              />
+            </div>
           </div>
         )}
         {error && <Error message={error?.message} />}
