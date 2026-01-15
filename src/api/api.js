@@ -1,7 +1,7 @@
 import { getAccessToken, getRefreshToken, set } from "@/helper/session";
 
-const apiUrl = import.meta.env.VITE_API_URL;
-const basicAuthToken = btoa(`${import.meta.env.VITE_BASIC_AUTH_USERNAME}:${import.meta.env.VITE_BASIC_AUTH_PASSWORD}`);
+const apiUrl = import.meta.env.VITE_API_URL || "";
+const basicAuthToken = btoa(`${import.meta.env.VITE_BASIC_AUTH_USERNAME || ""}:${import.meta.env.VITE_BASIC_AUTH_PASSWORD || ""}`);
 
 export const genericErrorMessage = "Something went wrong, please try again later";
 

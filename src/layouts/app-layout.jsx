@@ -1,18 +1,18 @@
 import Header from "@/components/header";
-import {Outlet} from "react-router-dom";
+import {Outlet, useLocation} from "react-router-dom";
 
 const AppLayout = () => {
+  const {pathname} = useLocation();
+  const isLandingPage = pathname === "/";
+
   return (
-    <div>
-      <main className="min-h-screen container">
-        <Header />
-        <Outlet />
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className={`flex-1 container flex flex-col ${!isLandingPage ? 'pt-4' : ''}`}>
+        <div className={`flex-1 flex flex-col w-full ${isLandingPage ? 'items-center justify-center pb-14' : ''}`}>
+          <Outlet />
+        </div>
       </main>
-      <div className="p-10 text-center bg-gray-800 mt-10">
-        Made with 💗 by Ray — Connect with me on <a href="https://www.linkedin.com/in/raythx/" target="_blank" rel="noopener noreferrer" className="nav-link underline" >
-            LinkedIn
-          </a> 
-      </div>
     </div>
   );
 };

@@ -17,21 +17,39 @@ function Auth() {
   }, [isAuthenticated, loading, navigate]);
 
   return (
-    <div className="flex flex-col items-center gap-10" style={{ marginTop: '20vh' }}>
-      <h1 className="text-5xl font-extrabold">
-        {searchParams.get("createNew")
-          ? "Hold up! Let's login first.."
-          : "Login / Signup"}
-      </h1>
-      <Tabs defaultValue="login" className="w-[400px]">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="login">Login</TabsTrigger>
-          <TabsTrigger value="signup">Signup</TabsTrigger>
+    <div className="flex flex-col items-center justify-center min-h-[80vh] gap-6 px-4">
+      <div className="flex flex-col items-center gap-2">
+        <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight text-center">
+          {searchParams.get("createNew")
+            ? "Wait! Let's get you set up"
+            : "Welcome to Zap"}
+        </h1>
+        <p className="text-gray-500 font-medium text-sm sm:text-base text-center max-w-[350px]">
+          {searchParams.get("createNew")
+            ? "Sign in to track analytics and manage your new link."
+            : "Sign in to access click analytics, geolocation data, and custom links."}
+        </p>
+      </div>
+      
+      <Tabs defaultValue="login" className="w-full max-w-[400px]">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-900 border border-gray-800 h-12 p-1 rounded-xl">
+          <TabsTrigger 
+            value="login" 
+            className="rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all font-bold"
+          >
+            Login
+          </TabsTrigger>
+          <TabsTrigger 
+            value="signup"
+            className="rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all font-bold"
+          >
+            Signup
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="login">
+        <TabsContent value="login" className="mt-6">
           <Login />
         </TabsContent>
-        <TabsContent value="signup">
+        <TabsContent value="signup" className="mt-6">
           <Signup />
         </TabsContent>
       </Tabs>

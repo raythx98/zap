@@ -5,9 +5,9 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 export default function App({devices}) {
   return (
-    <div style={{width: "100%", height: 300}}>
-      <ResponsiveContainer>
-        <PieChart width={700} height={400}>
+    <div className="w-full h-80">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
           <Pie
             data={devices}
             labelLine={false}
@@ -15,6 +15,9 @@ export default function App({devices}) {
               `${device}: ${(percent * 100).toFixed(0)}%`
             }
             dataKey="count"
+            cx="50%"
+            cy="50%"
+            outerRadius="80%"
           >
             {devices.map((entry, index) => (
               <Cell

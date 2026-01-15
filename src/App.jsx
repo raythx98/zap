@@ -1,5 +1,6 @@
 import "./App.css";
 import {RouterProvider, createBrowserRouter} from "react-router-dom";
+import { Toaster } from "sonner";
 import UrlProvider from "./context";
 
 import AppLayout from "./layouts/app-layout";
@@ -46,12 +47,13 @@ const router = createBrowserRouter([
     ],
   },
 ], {
-  basename: "/zap",
+  basename: import.meta.env.BASE_URL,
 });
 
 function App() {
   return (
     <UrlProvider>
+      <Toaster richColors />
       <RouterProvider router={router} />
     </UrlProvider>
   );

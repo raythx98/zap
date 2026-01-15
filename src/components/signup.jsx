@@ -16,6 +16,7 @@ import {signup} from "@/api/apiAuth";
 import {BeatLoader} from "react-spinners";
 import useFetch from "@/hooks/use-fetch";
 import {UrlState} from "@/context";
+import { toast } from "sonner";
 
 const Signup = () => {
   let [searchParams] = useSearchParams();
@@ -45,10 +46,11 @@ const Signup = () => {
   useEffect(() => {
     if (error === null && data) {
       fetchUser();
-      navigate(`/dashboard?${longLink ? `createNew=${longLink}` : ""}`);
+      toast.success("Account created successfully!");
+      navigate(`/dashboard?isLoggedIn=true${longLink ? `&createNew=${longLink}` : ""}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [error, loading]);
+  }, [error, data]);
 
   const handleSignup = async () => {
     setErrors([]);
@@ -81,38 +83,45 @@ const Signup = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Signup</CardTitle>
-        <CardDescription>
-          Create a new account if you haven&rsquo;t already
-        </CardDescription>
-        {error && <Error message={error?.message} />}
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="space-y-1">
+    <Card className="bg-gray-900 border-gray-800 rounded-2xl shadow-2xl p-2">
+      {error && (
+        <CardHeader>
+          <Error message={error?.message} />
+        </CardHeader>
+      )}
+      <CardContent className="space-y-6 pt-4">
+        <div className="space-y-2">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email Address</span>
           <Input
             name="email"
             type="email"
-            placeholder="Enter Email"
+            placeholder="e.g. ray@example.com"
             onChange={handleInputChange}
+            className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
           />
+          {errors.email && <Error message={errors.email} />}
         </div>
-        {errors.email && <Error message={errors.email} />}
-        <div className="space-y-1">
+        
+        <div className="space-y-2">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</span>
           <Input
             name="password"
             type="password"
-            placeholder="Enter Password"
+            placeholder="Minimum 6 characters"
             onChange={handleInputChange}
+            className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
           />
+          {errors.password && <Error message={errors.password} />}
         </div>
-        {errors.password && <Error message={errors.password} />}
       </CardContent>
-      <CardFooter>
-        <Button onClick={handleSignup}>
+      <CardFooter className="mt-2">
+        <Button 
+          onClick={handleSignup}
+          className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg"
+          disabled={loading}
+        >
           {loading ? (
-            <BeatLoader size={10} color="#36d7b7" />
+            <BeatLoader size={10} color="white" />
           ) : (
             "Create Account"
           )}

@@ -11,9 +11,9 @@ import {
 
 export default function Location({countries}) {
   return (
-    <div style={{width: "100%", height: 300}}>
-      <ResponsiveContainer>
-        <LineChart width={700} height={300} data={countries}>
+    <div className="w-full h-80">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={countries}>
           <XAxis dataKey="country" />
           <YAxis />
           <Tooltip labelStyle={{color: "green"}} />

@@ -4,8 +4,8 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: "/zap/",
+export default defineConfig(({command}) => ({
+  base: command === "serve" ? "/" : "/zap/",
   plugins: [react()],
   resolve: {
     alias: {
@@ -18,4 +18,4 @@ export default defineConfig({
   rules: {
     "react/prop-types": 0,
   },
-});
+}));

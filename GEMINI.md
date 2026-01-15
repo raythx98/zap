@@ -3,26 +3,33 @@
 ## Project Overview
 - **Name:** Zap
 - **Type:** React Web Application (Vite)
-- **Current Task:** Transition from EC2 deployment to static deployment on GitHub Pages.
+- **Status:** Modernized and configured for multi-environment deployment.
 
-## Learnings & Context
-- The project is a React app built with Vite.
-- Previously deployed to AWS EC2 (evidenced by `.github/workflows/aws.yml`).
-- Evaluation for GitHub Pages:
-    - **Suitability:** High. It's a client-side React app with an external API.
-    - **Routing:** Uses `react-router-dom` with `createBrowserRouter`. This requires a `404.html` fallback on GitHub Pages to handle direct navigation to subpaths.
-    - **Environment Variables:** Needs `VITE_API_URL`, `VITE_BASIC_AUTH_USERNAME`, and `VITE_BASIC_AUTH_PASSWORD` during build. Currently configured to `https://129.150.49.141.sslip.io/api/`.
-    - **Build Output:** Vite defaults to `dist/`.
-- **Deployment Trigger:** Configured to deploy automatically on push to the `master` branch.
-- **Base Path:** Set to `base: "/zap/"` in `vite.config.js` and `basename: "/zap"` in `createBrowserRouter` (`src/App.jsx`) to correctly handle subdirectory hosting on GitHub Pages.
-- **Relative Assets:** Updated `index.html` to use relative paths for assets to avoid issues with absolute root redirects.
-- **404.html Hack:** Since GitHub Pages doesn't support SPA routing natively, the deployment workflow copies `index.html` to `404.html`. This ensures that any direct request to a subpath (e.g., `/dashboard`) is handled by the React app instead of showing a GitHub 404 page.
-- **Secrets:** Ensure `BASIC_AUTH_PASSWORD` is set in GitHub Repository Secrets.
+## Deployment & Environments
+- **Hosting:** Configured for GitHub Pages (`/zap/` subpath) in production.
+- **Dynamic Base Path:**
+    - **Development:** Uses `/` (accessible at `http://localhost:5173`).
+    - **Production:** Uses `/zap/` (controlled via `vite.config.js` and `import.meta.env.BASE_URL`).
+- **Environment Variables:**
+    - `.env.development`: Points to local API (default `http://localhost:8000/api/`).
+    - `.env.production`: Points to production API.
+- **GitHub Actions:** Automatically deploys to GitHub Pages on push to `master`, handles `404.html` hack for SPA routing.
 
-## URL & QR Code Strategy
-- **Base Path Issue:** `window.location.origin` does not include the subdirectory (e.g., `/zap`). This causes generated links to point to the root domain (incorrect) instead of the app path.
-- **Client-Side QR:** The project has `react-qrcode-logo` installed. We should prefer generating QR codes on the client side to:
-    1.  Fix the URL path issue dynamically.
-    2.  Remove dependency on backend-generated images.
-    3.  Improve performance (no image fetch).
-- **Correct URL Construction:** Use `window.location.origin + import.meta.env.BASE_URL + link_id`. Note that `import.meta.env.BASE_URL` usually implies a trailing slash, so handle concatenation carefully.
+## Architectural Choices
+- **Routing:** Uses `react-router-dom` with `createBrowserRouter` and dynamic `basename`.
+- **UI Framework:** Tailwind CSS with a consistent "Zap Dark" theme (`bg-gray-900`, `border-gray-800`, `rounded-2xl`).
+- **Icons:** Standardized on `lucide-react` for a clean, consistent look.
+- **Notifications:** Integrated `sonner` for global toast notifications (Copy, Create, Delete, Auth actions).
+- **Modals:** Uses `@radix-ui/react-dialog` for confirmation modals (Logout, Delete) and the Create Link flow.
+
+## UI/UX Patterns
+- **Container Strategy:** Fluid layout on mobile/tablet, capped at a focused `1000px` max-width on desktops.
+- **Landing Page:** Full-screen Hero section, vertically centered below the sticky header. The FAQ section has been removed for a cleaner initial experience.
+- **Link Cards:** Revamped with clear uppercase labels (e.g., "TITLE"), robust truncation with ellipses, and circular action buttons with purpose-specific hover colors.
+- **Auth Flow:** Modernized Login/Signup with labeled inputs and a streamlined "Wait! Let's get you set up" header for landing-page redirects.
+- **Mobile First:** All inputs are `text-base` (16px) to prevent iOS auto-zoom. Horizontal layout for cards is maintained down to the `sm` breakpoint.
+
+## Technical Details
+- **QR Code Strategy:** Generated client-side using `react-qrcode-logo`. Construction uses `window.location.origin + import.meta.env.BASE_URL + path` to ensure accuracy in both dev and prod.
+- **Button Component:** Enhanced global `Button` component with automatic `truncate` and `flex` centering for content (icons + text).
+- **Layout Logic:** `AppLayout` handles conditional vertical centering for the landing page while maintaining standard top-alignment for internal pages.
