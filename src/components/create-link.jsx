@@ -258,7 +258,7 @@ export function CreateLink({
         </div>
 
         {finalLink && (
-          <div className="flex flex-col gap-4 p-4 bg-blue-600/10 border border-blue-500/20 rounded-xl items-center text-center">
+          <div className="flex flex-col gap-4 p-4 bg-blue-600/10 border border-blue-500/20 rounded-xl items-center text-center w-full box-border overflow-hidden">
             <div className="flex items-center gap-2 text-blue-400">
               <CheckCircle size={24}/>
               <span className="font-bold text-lg">Your Zap is ready!</span>

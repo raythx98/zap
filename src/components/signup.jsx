@@ -17,9 +17,10 @@ const Signup = () => {
   const navigate = useNavigate();
   const {setIsAuthenticated} = UrlState();
   const [errors, setErrors] = useState({});
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [state, formAction, isPending] = useActionState(async (prevState, formData) => {
-    const data = Object.fromEntries(formData);
+  const [state, formAction, isPending] = useActionState(async (prevState) => {
     setErrors({});
     
     try {
@@ -35,8 +36,8 @@ const Signup = () => {
           .max(255, "Password must be at most 255 characters"),
       });
 
-      schema.parse(data);
-      await signup(data);
+      schema.parse({ email, password });
+      await signup({ email, password });
       return { success: true };
     } catch (e) {
       if (e instanceof z.ZodError) {
@@ -70,6 +71,8 @@ const Signup = () => {
               type="email"
               placeholder="e.g. ray@example.com"
               error={!!errors.email}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
             />
             {errors.email && <span className="text-red-500 text-xs ml-1">{errors.email}</span>}
@@ -82,6 +85,8 @@ const Signup = () => {
               type="password"
               placeholder="Minimum 6 characters"
               error={!!errors.password}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
             />
             {errors.password && <span className="text-red-500 text-xs ml-1">{errors.password}</span>}

@@ -13,6 +13,7 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [urls, setUrls] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [totalClicks, setTotalClicks] = useState(0); // New state variable
   const [, startTransition] = useTransition();
 
   const [optimisticUrls, removeOptimisticUrl] = useOptimistic(
@@ -25,6 +26,7 @@ const Dashboard = () => {
       setLoading(true);
       const data = await getUrls();
       setUrls(data?.urls || []);
+      setTotalClicks(data?.total_clicks || 0);
     } catch (err) {
       console.error(err);
     } finally {
@@ -77,7 +79,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="flex justify-center">
             <p className="text-4xl font-bold text-white">
-              {optimisticUrls.reduce((acc, url) => acc + (url.redirects?.length || 0), 0)}
+              {totalClicks}
             </p>
           </CardContent>
         </Card>
