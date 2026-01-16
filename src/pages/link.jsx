@@ -39,6 +39,28 @@ const LinkPage = () => {
     fn();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        navigate("/dashboard");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [navigate]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter" && isDeleteModalOpen) {
+        handleDelete();
+      }
+    };
+    if (isDeleteModalOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDeleteModalOpen]);
+
   let link = "";
   if (data?.url) {
     link = data?.url?.custom_url ? data?.url?.custom_url : data?.url.short_url;

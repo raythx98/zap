@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {useState} from "react";
+import {useState, useEffect} from "react";
 
 const LinkCard = ({url = [], fetchUrls}) => {
   const navigate = useNavigate();
@@ -52,6 +52,18 @@ const LinkCard = ({url = [], fetchUrls}) => {
   const handleCardClick = () => {
     navigate(`/link/${url?.id}`);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter" && isDeleteModalOpen) {
+        handleDelete();
+      }
+    };
+    if (isDeleteModalOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDeleteModalOpen]);
 
   return (
     <div 

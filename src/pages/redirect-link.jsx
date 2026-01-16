@@ -27,9 +27,10 @@ const RedirectLink = () => {
 
   if (error) {
     return (
-      <>
-        {error && <Error message={error?.message} />}
-      </>
+      <div className="flex flex-col items-center gap-2 mt-10">
+        <h1 className="text-2xl font-bold text-white">Redirection Failed</h1>
+        <p className="text-gray-500">The link might be invalid or has been deleted.</p>
+      </div>
     );
   }
 

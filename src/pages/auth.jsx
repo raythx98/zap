@@ -14,6 +14,16 @@ function Auth() {
   const longLink = sessionStorage.getItem("urlToCreate");
 
   useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        navigate("/");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [navigate]);
+
+  useEffect(() => {
     if (searchParams.get("session_expired")) {
       toast.error("Session expired. Please log in again.");
       logoutAction();

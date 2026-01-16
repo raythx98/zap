@@ -50,6 +50,13 @@ export function CreateLink({
     });
   };
 
+  const handleInputKeyDown = (e) => {
+    if (e.key === "Enter" && !finalLink) {
+      e.preventDefault();
+      createNewLink();
+    }
+  };
+
   const {
     loading,
     error,
@@ -163,6 +170,18 @@ export function CreateLink({
     });
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter" && suggestion) {
+        acceptSuggestion();
+      }
+    };
+    if (suggestion) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [suggestion]);
+
   return (
     <>
     <Dialog
@@ -194,7 +213,9 @@ export function CreateLink({
               placeholder="e.g. My Awesome Project"
               value={formValues.title}
               onChange={handleChange}
+              onKeyDown={handleInputKeyDown}
               disabled={finalLink}
+              error={!!errors.title}
               className="bg-gray-800 border-gray-700 focus:border-blue-500"
             />
             {errors.title && <Error message={errors.title} />}
@@ -207,7 +228,9 @@ export function CreateLink({
               placeholder="e.g. https://very-long-link-that-needs-shortening.com"
               value={formValues.fullUrl}
               onChange={handleChange}
+              onKeyDown={handleInputKeyDown}
               disabled={finalLink}
+              error={!!errors.fullUrl}
               className="bg-gray-800 border-gray-700 focus:border-blue-500"
             />
             {errors.fullUrl && <Error message={errors.fullUrl} />}
@@ -231,7 +254,9 @@ export function CreateLink({
                 placeholder="custom-slug"
                 value={formValues.customUrl}
                 onChange={handleChange}
+                onKeyDown={handleInputKeyDown}
                 disabled={finalLink}
+                error={!!errors.customUrl}
                 className="bg-gray-800 border-gray-700 focus:border-blue-500"
               />
             </div>

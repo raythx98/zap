@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {useState} from "react";
+import {useState, useEffect} from "react";
 
 const Header = () => {
 
@@ -51,13 +51,67 @@ const Header = () => {
 
 
 
-  const isLandingPage = location.pathname === "/";
-
-  const isLinkPage = location.pathname.startsWith("/link/");
+    const isLandingPage = location.pathname === "/";
 
 
 
-  return (
+    const isLinkPage = location.pathname.startsWith("/link/");
+
+
+
+  
+
+
+
+    useEffect(() => {
+
+
+
+      const handleKeyDown = (e) => {
+
+
+
+        if (e.key === "Enter" && isLogoutModalOpen) {
+
+
+
+          handleLogout();
+
+
+
+        }
+
+
+
+      };
+
+
+
+      if (isLogoutModalOpen) {
+
+
+
+        window.addEventListener("keydown", handleKeyDown);
+
+
+
+      }
+
+
+
+      return () => window.removeEventListener("keydown", handleKeyDown);
+
+
+
+    }, [isLogoutModalOpen]);
+
+
+
+  
+
+
+
+    return (
 
     <header className="sticky top-0 z-50 w-full border-b border-gray-800/50 bg-background/80 backdrop-blur-md">
 

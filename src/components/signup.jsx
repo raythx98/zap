@@ -81,44 +81,48 @@ const Signup = () => {
 
   return (
     <Card className="bg-gray-900 border-gray-800 rounded-2xl shadow-2xl p-2">
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email Address</span>
-          <Input
-            name="email"
-            type="email"
-            placeholder="e.g. ray@example.com"
-            onChange={handleInputChange}
-            className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
-          />
-          {errors.email && <Error message={errors.email} />}
-        </div>
-        
-        <div className="space-y-2">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</span>
-          <Input
-            name="password"
-            type="password"
-            placeholder="Minimum 6 characters"
-            onChange={handleInputChange}
-            className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
-          />
-          {errors.password && <Error message={errors.password} />}
-        </div>
-      </CardContent>
-      <CardFooter className="mt-2">
-        <Button 
-          onClick={handleSignup}
-          className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg"
-          disabled={loading}
-        >
-          {loading ? (
-            <BeatLoader size={10} color="white" />
-          ) : (
-            "Create Account"
-          )}
-        </Button>
-      </CardFooter>
+      <form onSubmit={(e) => { e.preventDefault(); handleSignup(); }}>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email Address</span>
+            <Input
+              name="email"
+              type="email"
+              placeholder="e.g. ray@example.com"
+              onChange={handleInputChange}
+              error={!!errors.email}
+              className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
+            />
+            {errors.email && <Error message={errors.email} />}
+          </div>
+          
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</span>
+            <Input
+              name="password"
+              type="password"
+              placeholder="Minimum 6 characters"
+              onChange={handleInputChange}
+              error={!!errors.password}
+              className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
+            />
+            {errors.password && <Error message={errors.password} />}
+          </div>
+        </CardContent>
+        <CardFooter className="mt-2">
+          <Button 
+            type="submit"
+            className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg"
+            disabled={loading}
+          >
+            {loading ? (
+              <BeatLoader size={10} color="white" />
+            ) : (
+              "Create Account"
+            )}
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   );
 };

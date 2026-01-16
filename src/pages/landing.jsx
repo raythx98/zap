@@ -1,7 +1,7 @@
 import { formatLink } from "@/helper/formatlink";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {
   Dialog,
@@ -10,23 +10,41 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { toast } from "sonner";
+import {UrlState} from "@/context";
 
 const LandingPage = () => {
   const [longUrl, setLongUrl] = useState("");
   const [suggestion, setSuggestion] = useState(null);
   const [suggestionType, setSuggestionType] = useState("none");
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const {isAuthenticated} = UrlState();
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isAuthenticated) {
+        navigate("/dashboard");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isAuthenticated, navigate]);
 
   const handleShorten = (e) => {
     e.preventDefault();
-    if (!longUrl) return;
+    setErrors({});
+    if (!longUrl) {
+      setErrors({url: "URL is required"});
+      toast.error("Please enter a URL to shorten");
+      return;
+    }
 
     const { formatted, type, isValid } = formatLink(longUrl);
     
     // If invalid, show error toast immediately
     if (!isValid) {
+      setErrors({url: "Invalid URL"});
       toast.error("Please enter a valid URL (e.g. google.com)");
       return;
     }
@@ -52,6 +70,12 @@ const LandingPage = () => {
     proceedWithUrl(suggestedUrl);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleShorten(e);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center w-full">
       <section className="flex flex-col items-center justify-center w-full">
@@ -66,6 +90,8 @@ const LandingPage = () => {
             placeholder="Enter your Loooong URL"
             value={longUrl}
             onChange={(e) => setLongUrl(e.target.value)}
+            onKeyDown={handleKeyDown}
+            error={!!errors.url}
             className="h-full flex-1 py-4 px-4"
           />
           <Button type="submit" className="h-full px-8 font-bold" variant="destructive">

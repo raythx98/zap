@@ -83,50 +83,54 @@ const Login = () => {
 
   return (
     <Card className="bg-gray-900 border-gray-800 rounded-2xl shadow-2xl p-2">
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email Address</span>
-          <Input
-            name="email"
-            type="email"
-            placeholder="e.g. ray@example.com"
-            onChange={handleInputChange}
-            className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
+      <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email Address</span>
+            <Input
+              name="email"
+              type="email"
+              placeholder="e.g. ray@example.com"
+              onChange={handleInputChange}
+              error={!!errors.email}
+              className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
+            />
+            {errors.email && <Error message={errors.email} />}
+          </div>
+          
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</span>
+            <Input
+              name="password"
+              type="password"
+              placeholder="Enter your password"
+              onChange={handleInputChange}
+              error={!!errors.password}
+              className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
+            />
+            {errors.password && <Error message={errors.password} />}
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4 mt-2">
+          <Button 
+            type="submit"
+            className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg"
+            disabled={loading}
+          >
+            {loading ? <BeatLoader size={10} color="white" /> : "Login"}
+          </Button>
+          <div className="flex items-center gap-4 w-full">
+            <div className="h-[1px] bg-gray-800 flex-1" />
+            <span className="text-xs font-bold text-gray-600 uppercase">OR</span>
+            <div className="h-[1px] bg-gray-800 flex-1" />
+          </div>
+          <CreateLink 
+            buttonText="Continue as Guest" 
+            variant="destructive"
+            className="w-full h-12 text-lg font-bold transition-all shadow-lg"
           />
-          {errors.email && <Error message={errors.email} />}
-        </div>
-        
-        <div className="space-y-2">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</span>
-          <Input
-            name="password"
-            type="password"
-            placeholder="Enter your password"
-            onChange={handleInputChange}
-            className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
-          />
-          {errors.password && <Error message={errors.password} />}
-        </div>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-4 mt-2">
-        <Button 
-          onClick={handleLogin} 
-          className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg"
-          disabled={loading}
-        >
-          {loading ? <BeatLoader size={10} color="white" /> : "Login"}
-        </Button>
-        <div className="flex items-center gap-4 w-full">
-          <div className="h-[1px] bg-gray-800 flex-1" />
-          <span className="text-xs font-bold text-gray-600 uppercase">OR</span>
-          <div className="h-[1px] bg-gray-800 flex-1" />
-        </div>
-        <CreateLink 
-          buttonText="Continue as Guest" 
-          variant="destructive"
-          className="w-full h-12 text-lg font-bold transition-all shadow-lg"
-        />
-      </CardFooter>
+        </CardFooter>
+      </form>
     </Card>
   );
 };
