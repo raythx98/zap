@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 
 export default function DeviceStats({devices}) {
   if (!devices || devices.length === 0) return null;

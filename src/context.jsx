@@ -1,6 +1,4 @@
-/* eslint-disable react/prop-types */
-
-import {createContext, useContext, useEffect, useState} from "react";
+import {createContext, use, useEffect, useState} from "react";
 import {isAuthenticated as checkAuth} from "./helper/session";
 
 const UrlContext = createContext();
@@ -24,7 +22,7 @@ const UrlProvider = ({children}) => {
 };
 
 export const UrlState = () => {
-  return useContext(UrlContext);
+  return use(UrlContext);
 };
 
 export default UrlProvider;

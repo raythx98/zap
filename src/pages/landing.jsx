@@ -1,7 +1,7 @@
 import { formatLink } from "@/helper/formatlink";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
-import {useState, useEffect} from "react";
+import {useState, useEffect, useCallback} from "react";
 import {useNavigate} from "react-router-dom";
 import {
   Dialog,
@@ -31,6 +31,29 @@ const LandingPage = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isAuthenticated, navigate]);
 
+  const proceedWithUrl = useCallback((url) => {
+    sessionStorage.setItem("urlToCreate", url);
+    navigate("/auth");
+  }, [navigate]);
+
+  const acceptSuggestion = useCallback(() => {
+    const suggestedUrl = suggestion;
+    setSuggestion(null);
+    proceedWithUrl(suggestedUrl);
+  }, [suggestion, proceedWithUrl]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter" && suggestion) {
+        acceptSuggestion();
+      }
+    };
+    if (suggestion) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [suggestion, acceptSuggestion]);
+
   const handleShorten = (e) => {
     e.preventDefault();
     setErrors({});
@@ -59,25 +82,9 @@ const LandingPage = () => {
     proceedWithUrl(longUrl);
   };
 
-  const proceedWithUrl = (url) => {
-    sessionStorage.setItem("urlToCreate", url);
-    navigate("/auth");
-  };
-
-  const acceptSuggestion = () => {
-    const suggestedUrl = suggestion;
-    setSuggestion(null);
-    proceedWithUrl(suggestedUrl);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleShorten(e);
-    }
-  };
-
   return (
     <div className="flex flex-col items-center justify-center w-full">
+      <title>Zap | The Only URL Shortener You&apos;ll Ever Need</title>
       <section className="flex flex-col items-center justify-center w-full">
         <h2 className="mb-10 text-4xl sm:text-6xl lg:text-7xl text-white text-center font-black tracking-tight">
           The only URL Shortener <br /> you&rsquo;ll ever need! 👇
@@ -90,7 +97,6 @@ const LandingPage = () => {
             placeholder="Enter your Loooong URL"
             value={longUrl}
             onChange={(e) => setLongUrl(e.target.value)}
-            onKeyDown={handleKeyDown}
             error={!!errors.url}
             className="h-full flex-1 py-4 px-4"
           />

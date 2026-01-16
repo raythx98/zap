@@ -1,5 +1,5 @@
 import { formatLink } from "@/helper/formatlink";
-import {Copy, QrCode} from "lucide-react";
+import {Copy, QrCode, CheckCircle} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {
   Dialog,
@@ -10,28 +10,26 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {Input} from "@/components/ui/input";
-import {useNavigate, useSearchParams} from "react-router-dom";
-import {useEffect, useState} from "react";
-import Error from "./error";
+import {useNavigate} from "react-router-dom";
+import {useEffect, useState, useTransition, useCallback} from "react";
 import {z} from "zod";
-import useFetch from "@/hooks/use-fetch";
 import {createUrl} from "@/api/apiUrls";
-import {BeatLoader} from "react-spinners";
-import {UrlState} from "@/context";
-import { FaCheckCircle } from 'react-icons/fa'; 
+import {BeatLoader} from "./ui/loaders";
 import {QRCode} from "react-qrcode-logo";
 import { toast } from "sonner";
+import { downloadImage } from "@/lib/utils";
+import { UrlState } from "@/context";
 
 export function CreateLink({ 
   buttonText = "Create New Link", 
   variant = "destructive",
   className = ""
 }) {
+  const {isAuthenticated} = UrlState();
   const navigate = useNavigate();
+  const [isPending, startTransition] = useTransition();
 
-  let [searchParams, setSearchParams] = useSearchParams();
   const longLink = sessionStorage.getItem("urlToCreate");
-  const isLoggedIn = searchParams.get("isLoggedIn");
 
   const [errors, setErrors] = useState({});
   const [formValues, setFormValues] = useState({
@@ -42,6 +40,14 @@ export function CreateLink({
   const [finalLink, setFinalLink] = useState("");
   const [suggestion, setSuggestion] = useState(null);
   const [suggestionType, setSuggestionType] = useState("none");
+
+  useEffect(() => {
+    return () => {
+      if (isAuthenticated) {
+        sessionStorage.removeItem("urlToCreate");
+      }
+    };
+  }, [isAuthenticated]);
 
   const handleChange = (e) => {
     setFormValues({
@@ -57,26 +63,6 @@ export function CreateLink({
     }
   };
 
-  const {
-    loading,
-    error,
-    data,
-    fn: fnCreateUrl,
-  } = useFetch(createUrl, {...formValues});
-
-  useEffect(() => {
-    if (error === null && data) {
-      toast.success("Link created successfully!");
-      sessionStorage.removeItem("urlToCreate");
-      if (isLoggedIn == "true" || buttonText == "Create New Link") {
-        navigate(`/link/${data.id}`);
-      } else {
-        setFinalLink(data.short_url);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [error, data]);
-
   const fullShortUrl = `${window.location.origin}${import.meta.env.BASE_URL}${finalLink}`;
 
   const handleCopyToClipboard = () => {
@@ -84,29 +70,11 @@ export function CreateLink({
     toast.success("Link copied to clipboard!");
   };
 
-  const downloadImage = () => {
-    const canvas = document.getElementById("qr-create-link");
-    if (canvas) {
-      const pngUrl = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.href = pngUrl;
-      downloadLink.download = `${formValues.title || "qr-code"}.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      toast.success("QR Code downloaded successfully!");
-    }
+  const handleDownload = () => {
+    downloadImage("qr-create-link", formValues.title || "qr-code");
   };
 
-  const acceptSuggestion = () => {
-    const suggestedUrl = suggestion;
-    setSuggestion(null);
-    setFormValues(prev => ({ ...prev, fullUrl: suggestedUrl }));
-    // We delay the actual creation slightly to ensure state is updated
-    setTimeout(() => createNewLink(suggestedUrl, true), 10);
-  };
-
-  const createNewLink = async (overrideUrl = null, force = false) => {
+  const createNewLink = useCallback(async (overrideUrl = null, force = false) => {
     setErrors({});
     const urlToValidate = overrideUrl || formValues.fullUrl;
     const { formatted, type, isValid } = formatLink(urlToValidate);
@@ -124,41 +92,61 @@ export function CreateLink({
       return;
     }
 
-    try {
-      const schema = z.object({
-        title: z
-          .string()
-          .max(100, "Title must be at most 100 characters")
-          .optional()
-          .or(z.literal("")),
-        fullUrl: z
-          .string()
-          .url("Must be a valid URL")
-          .min(1, "Long URL is required")
-          .max(2048, "Long URL must be at most 2048 characters"),
-        customUrl: z
-          .string()
-          .optional()
-          .refine(val => !val || val.length >= 4, {
-            message: "Custom URL must be at least 4 characters",
-          })
-          .refine(val => !val || val.length <= 255, {
-            message: "Custom URL must be at most 255 characters",
-          }),
-      });
-
-      schema.parse({ ...formValues, fullUrl: formatted });
-      await fnCreateUrl();
-    } catch (e) {
-      if (e instanceof z.ZodError) {
-        const newErrors = {};
-        e.issues.forEach((err) => {
-          newErrors[err.path[0]] = err.message;
+    startTransition(async () => {
+      try {
+        const schema = z.object({
+          title: z
+            .string()
+            .max(100, "Title must be at most 100 characters")
+            .optional()
+            .or(z.literal("")),
+          fullUrl: z
+            .string()
+            .url("Must be a valid URL")
+            .min(1, "Long URL is required")
+            .max(2048, "Long URL must be at most 2048 characters"),
+          customUrl: z
+            .string()
+            .optional()
+            .refine(val => !val || val.length >= 4, {
+              message: "Custom URL must be at least 4 characters",
+            })
+            .refine(val => !val || val.length <= 255, {
+              message: "Custom URL must be at most 255 characters",
+            }),
         });
-        setErrors(newErrors);
+
+        const validatedData = schema.parse({ ...formValues, fullUrl: formatted });
+        const data = await createUrl(validatedData);
+        
+        toast.success("Link created successfully!");
+        sessionStorage.removeItem("urlToCreate");
+        if (isAuthenticated || buttonText == "Create New Link") {
+          navigate(`/link/${data.id}`);
+        } else {
+          setFinalLink(data.short_url);
+        }
+      } catch (e) {
+        if (e instanceof z.ZodError) {
+          const newErrors = {};
+          e.issues.forEach((err) => {
+            newErrors[err.path[0]] = err.message;
+          });
+          setErrors(newErrors);
+        } else {
+          // Error already toasted by parseError in API layer
+        }
       }
-    }
-  };
+    });
+  }, [formValues, isAuthenticated, buttonText, navigate]);
+
+  const acceptSuggestion = useCallback(() => {
+    const suggestedUrl = suggestion;
+    setSuggestion(null);
+    setFormValues(prev => ({ ...prev, fullUrl: suggestedUrl }));
+    // We delay the actual creation slightly to ensure state is updated
+    setTimeout(() => createNewLink(suggestedUrl, true), 10);
+  }, [suggestion, createNewLink]);
 
   const reset = async () => {
     setFinalLink(null);
@@ -180,17 +168,22 @@ export function CreateLink({
       window.addEventListener("keydown", handleKeyDown);
     }
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [suggestion]);
+  }, [suggestion, acceptSuggestion]);
 
   return (
     <>
     <Dialog
-      defaultOpen={isLoggedIn == 'true' && !!longLink}
+      defaultOpen={isAuthenticated && !!longLink}
       onOpenChange={(res) => {
         if (!res) {
-          if (isLoggedIn === 'true') setSearchParams({});
-          sessionStorage.removeItem("urlToCreate");
-          setFormValues({ title: "", fullUrl: "", customUrl: "" });
+          if (isAuthenticated) {
+            sessionStorage.removeItem("urlToCreate");
+          }
+          setFormValues({ 
+            title: "", 
+            fullUrl: isAuthenticated ? "" : (sessionStorage.getItem("urlToCreate") || ""), 
+            customUrl: "" 
+          });
         }
       }}
     >
@@ -218,7 +211,7 @@ export function CreateLink({
               error={!!errors.title}
               className="bg-gray-800 border-gray-700 focus:border-blue-500"
             />
-            {errors.title && <Error message={errors.title} />}
+            {errors.title && <span className="text-red-500 text-xs ml-1">{errors.title}</span>}
           </div>
 
           <div className="space-y-2">
@@ -233,7 +226,7 @@ export function CreateLink({
               error={!!errors.fullUrl}
               className="bg-gray-800 border-gray-700 focus:border-blue-500"
             />
-            {errors.fullUrl && <Error message={errors.fullUrl} />}
+            {errors.fullUrl && <span className="text-red-500 text-xs ml-1">{errors.fullUrl}</span>}
           </div>
 
           <div className="space-y-2">
@@ -260,14 +253,14 @@ export function CreateLink({
                 className="bg-gray-800 border-gray-700 focus:border-blue-500"
               />
             </div>
-            {errors.customUrl && <Error message={errors.customUrl} />}
+            {errors.customUrl && <span className="text-red-500 text-xs ml-1">{errors.customUrl}</span>}
           </div>
         </div>
 
         {finalLink && (
           <div className="flex flex-col gap-4 p-4 bg-blue-600/10 border border-blue-500/20 rounded-xl items-center text-center">
             <div className="flex items-center gap-2 text-blue-400">
-              <FaCheckCircle size={24}/>
+              <CheckCircle size={24}/>
               <span className="font-bold text-lg">Your Zap is ready!</span>
             </div>
             <div className="flex w-full items-center gap-2 bg-gray-900 p-2 rounded-lg border border-gray-800">
@@ -284,7 +277,7 @@ export function CreateLink({
                 variant="ghost" 
                 size="icon"
                 className="h-8 w-8 hover:bg-gray-800 text-white"
-                onClick={downloadImage}
+                onClick={handleDownload}
               >
                 <QrCode className="h-4 w-4" />
               </Button>
@@ -299,8 +292,6 @@ export function CreateLink({
             </div>
           </div>
         )}
-        
-        {error && null}
         
         <DialogFooter className="mt-4 sm:justify-end">
           { finalLink 
@@ -319,10 +310,10 @@ export function CreateLink({
                 type="button"
                 variant="destructive"
                 onClick={() => createNewLink()}
-                disabled={loading}
+                disabled={isPending}
                 className="w-full sm:w-auto font-bold h-11 px-8"
               >
-                {loading ? <BeatLoader size={8} color="white" /> : "Shorten URL"}
+                {isPending ? <BeatLoader size={8} color="white" /> : "Shorten URL"}
               </Button>
             )
           }

@@ -2,57 +2,27 @@ import {Input} from "./ui/input";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
-  CardHeader,
-  CardTitle,
 } from "./ui/card";
 import {Button} from "./ui/button";
-import {useNavigate, useSearchParams} from "react-router-dom";
-import {useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {useEffect, useState, useActionState} from "react";
 import {z} from "zod";
-import Error from "./error";
 import {login} from "@/api/apiAuth";
 import {CreateLink} from "@/components/create-link";
-import {BeatLoader} from "react-spinners";
-import useFetch from "@/hooks/use-fetch";
+import {BeatLoader} from "./ui/loaders";
 import {UrlState} from "@/context";
 import { toast } from "sonner";
 
 const Login = () => {
-  let [searchParams] = useSearchParams();
-  const isLoggedIn = searchParams.get("isLoggedIn");
-
   const navigate = useNavigate();
-
-  const [errors, setErrors] = useState({});
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
-  const handleInputChange = (e) => {
-    const {name, value} = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
-
-  const {loading, error, fn: fnLogin, data} = useFetch(login, formData);
   const {setIsAuthenticated} = UrlState();
+  const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    if (error === null && data) {
-      setIsAuthenticated(true);
-      toast.success("Logged in successfully!");
-      navigate("/dashboard?isLoggedIn=true");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [error, data]);
-
-  const handleLogin = async () => {
+  const [state, formAction, isPending] = useActionState(async (prevState, formData) => {
+    const data = Object.fromEntries(formData);
     setErrors({});
+    
     try {
       const schema = z.object({
         email: z
@@ -66,8 +36,9 @@ const Login = () => {
           .max(255, "Password must be at most 255 characters"),
       });
 
-      schema.parse(formData);
-      await fnLogin();
+      schema.parse(data);
+      await login(data);
+      return { success: true };
     } catch (e) {
       if (e instanceof z.ZodError) {
         const newErrors = {};
@@ -75,15 +46,23 @@ const Login = () => {
           newErrors[err.path[0]] = err.message;
         });
         setErrors(newErrors);
-      } else {
-        // Handle other errors if necessary
+        return { success: false };
       }
+      return { success: false, error: e.message };
     }
-  };
+  }, { success: null });
+
+  useEffect(() => {
+    if (state?.success) {
+      setIsAuthenticated(true);
+      toast.success("Logged in successfully!");
+      navigate("/dashboard");
+    }
+  }, [state, navigate, setIsAuthenticated]);
 
   return (
     <Card className="bg-gray-900 border-gray-800 rounded-2xl shadow-2xl p-2">
-      <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+      <form action={formAction}>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email Address</span>
@@ -91,11 +70,10 @@ const Login = () => {
               name="email"
               type="email"
               placeholder="e.g. ray@example.com"
-              onChange={handleInputChange}
               error={!!errors.email}
               className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
             />
-            {errors.email && <Error message={errors.email} />}
+            {errors.email && <span className="text-red-500 text-xs ml-1">{errors.email}</span>}
           </div>
           
           <div className="space-y-2">
@@ -104,20 +82,19 @@ const Login = () => {
               name="password"
               type="password"
               placeholder="Enter your password"
-              onChange={handleInputChange}
               error={!!errors.password}
               className="bg-gray-800 border-gray-700 focus:border-blue-500 transition-all"
             />
-            {errors.password && <Error message={errors.password} />}
+            {errors.password && <span className="text-red-500 text-xs ml-1">{errors.password}</span>}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4 mt-2">
           <Button 
             type="submit"
             className="w-full h-12 text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg"
-            disabled={loading}
+            disabled={isPending}
           >
-            {loading ? <BeatLoader size={10} color="white" /> : "Login"}
+            {isPending ? <BeatLoader size={10} color="white" /> : "Login"}
           </Button>
           <div className="flex items-center gap-4 w-full">
             <div className="h-[1px] bg-gray-800 flex-1" />

@@ -1,18 +1,29 @@
 import {redirect} from "@/api/apiUrls";
-import useFetch from "@/hooks/use-fetch";
-import {useEffect} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useParams} from "react-router-dom";
-import {BarLoader} from "react-spinners";
-import Error from "../components/error";
+import {BarLoader} from "@/components/ui/loaders";
 
 const RedirectLink = () => {
   const {id} = useParams();
-
-  const {loading, error, fn} = useFetch(redirect, id);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    fn();
-  }, []);
+    const performRedirect = async () => {
+      if (hasRedirected.current) return;
+      hasRedirected.current = true;
+
+      try {
+        setLoading(true);
+        await redirect(id);
+      } catch (err) {
+        setError(err);
+        setLoading(false);
+      }
+    };
+    performRedirect();
+  }, [id]);
 
   if (loading) {
     return (

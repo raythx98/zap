@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 
 export default function Location({countries}) {
   if (!countries || countries.length === 0) return null;

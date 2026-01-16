@@ -1,11 +1,11 @@
-import "./App.css";
+import {Suspense} from "react";
 import {RouterProvider, createBrowserRouter} from "react-router-dom";
 import { Toaster } from "sonner";
 import UrlProvider from "./context";
 
 import AppLayout from "./layouts/app-layout";
 import RequireAuth from "./components/require-auth";
-import ErrorBoundary from "./components/error-boundary";
+import { BarLoader } from "./components/ui/loaders";
 
 import RedirectLink from "./pages/redirect-link";
 import LandingPage from "./pages/landing";
@@ -54,10 +54,10 @@ const router = createBrowserRouter([
 function App() {
   return (
     <UrlProvider>
-      <ErrorBoundary>
-        <Toaster richColors />
+      <Toaster richColors />
+      <Suspense fallback={<BarLoader className="mt-4" />}>
         <RouterProvider router={router} />
-      </ErrorBoundary>
+      </Suspense>
     </UrlProvider>
   );
 }

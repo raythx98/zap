@@ -1,12 +1,11 @@
-/* eslint-disable react/prop-types */
 import {Copy, QrCode, LinkIcon, Trash, Calendar} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 import {Button} from "./ui/button";
-import useFetch from "@/hooks/use-fetch";
 import {deleteUrl} from "@/api/apiUrls";
-import {BeatLoader} from "react-spinners";
+import {BeatLoader} from "./ui/loaders";
 import {QRCode} from "react-qrcode-logo";
 import { toast } from "sonner";
+import { downloadImage } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -16,38 +15,37 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {useState, useEffect} from "react";
+import {useState, useEffect, useTransition, useCallback} from "react";
 
-const LinkCard = ({url = [], fetchUrls}) => {
+const LinkCard = ({url = [], fetchUrls, onDelete}) => {
   const navigate = useNavigate();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   // Fix URL generation to include base path
   const shortUrl = `${window.location.origin}${import.meta.env.BASE_URL}${url?.custom_url || url.short_url}`;
 
-  const downloadImage = (e) => {
+  const handleDownload = (e) => {
     e.stopPropagation();
-    const canvas = document.getElementById(`qr-${url?.id}`);
-    if (canvas) {
-      const pngUrl = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.href = pngUrl;
-      downloadLink.download = `${url?.title || "qr-code"}.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      toast.success("QR Code downloaded successfully!");
-    }
+    downloadImage(`qr-${url?.id}`, url?.title || "qr-code");
   };
 
-  const {loading: loadingDelete, fn: fnDelete} = useFetch(deleteUrl, url.id);
-
-  const handleDelete = () => {
-    fnDelete().then(() => {
-      fetchUrls();
+  const handleDelete = useCallback(() => {
+    if (onDelete) {
+      onDelete();
       setIsDeleteModalOpen(false);
-      toast.success("Link deleted successfully!");
+      return;
+    }
+    startTransition(async () => {
+      try {
+        await deleteUrl(url.id);
+        fetchUrls();
+        setIsDeleteModalOpen(false);
+        toast.success("Link deleted successfully!");
+      } catch (error) {
+        // Error already toasted by parseError in API layer
+      } 
     });
-  };
+  }, [url.id, fetchUrls, onDelete]);
 
   const handleCardClick = () => {
     navigate(`/link/${url?.id}`);
@@ -63,7 +61,7 @@ const LinkCard = ({url = [], fetchUrls}) => {
       window.addEventListener("keydown", handleKeyDown);
     }
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDeleteModalOpen]);
+  }, [isDeleteModalOpen, handleDelete]);
 
   return (
     <div 
@@ -127,7 +125,7 @@ const LinkCard = ({url = [], fetchUrls}) => {
           variant="secondary" 
           size="icon"
           className="rounded-full hover:bg-green-600 hover:text-white transition-colors"
-          onClick={downloadImage}
+          onClick={handleDownload}
         >
           <QrCode className="h-4 w-4" />
         </Button>
@@ -153,8 +151,8 @@ const LinkCard = ({url = [], fetchUrls}) => {
               <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="destructive" onClick={handleDelete} disabled={loadingDelete}>
-                {loadingDelete ? <BeatLoader size={5} color="white" /> : "Delete"}
+              <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
+                {isPending ? <BeatLoader size={5} color="white" /> : "Delete"}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -66,6 +66,11 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
+        progress: {
+          "0%": { transform: "translateX(-100%)" },
+          "50%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(100%)" },
+        },
         shake: {
           "0%, 100%": { transform: "translateX(0)" },
           "10%, 30%, 50%, 70%, 90%": { transform: "translateX(-4px)" },
@@ -81,6 +86,7 @@ module.exports = {
         },
       },
       animation: {
+        progress: "progress 2s infinite linear",
         shake: "shake 0.2s ease-in-out 0s 2",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",

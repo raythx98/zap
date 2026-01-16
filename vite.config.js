@@ -15,7 +15,8 @@ export default defineConfig(({command}) => ({
   build: {
     outDir: "dist",
   },
-  rules: {
-    "react/prop-types": 0,
+  server: {
+    port: 5175,
+    open: true,
   },
 }));

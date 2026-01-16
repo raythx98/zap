@@ -1,6 +1,5 @@
 import axios from "axios";
 import { getAccessToken, getRefreshToken, set, remove } from "@/helper/session";
-import { parseError } from "@/lib/error-handler";
 
 const apiUrl = import.meta.env.VITE_API_URL || "";
 const basicAuthToken = btoa(`${import.meta.env.VITE_BASIC_AUTH_USERNAME || ""}:${import.meta.env.VITE_BASIC_AUTH_PASSWORD || ""}`);

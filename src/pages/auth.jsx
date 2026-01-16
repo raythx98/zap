@@ -32,7 +32,7 @@ function Auth() {
 
   useEffect(() => {
     if (isAuthenticated && !loading)
-      navigate("/dashboard?isLoggedIn=true");
+      navigate("/dashboard");
   }, [isAuthenticated, loading, navigate]);
 
   return (

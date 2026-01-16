@@ -1,7 +1,6 @@
 import {logout} from "@/api/apiAuth";
-import useFetch from "@/hooks/use-fetch";
-import {Link, useNavigate, useLocation} from "react-router-dom";
-import {BarLoader} from "react-spinners";
+import {useNavigate, useLocation} from "react-router-dom";
+import {BarLoader} from "./ui/loaders";
 import {Button} from "./ui/button";
 import {UrlState} from "@/context";
 import {Home, LogIn, LinkIcon, LogOut} from "lucide-react";
@@ -15,39 +14,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {useState, useEffect} from "react";
+import {useState, useEffect, useTransition, useCallback} from "react";
 
 const Header = () => {
-
-  const {loading, fn: fnLogout} = useFetch(logout);
-
+  const [isPending, startTransition] = useTransition();
   const navigate = useNavigate();
-
   const location = useLocation();
-
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-
-
 
   const {isAuthenticated, setIsAuthenticated} = UrlState();
 
-
-
-  const handleLogout = () => {
-
-    fnLogout().then(() => {
-
-      setIsAuthenticated(false);
-
-      setIsLogoutModalOpen(false);
-
-      toast.success("Logged out successfully!");
-
-      navigate("/auth");
-
+  const handleLogout = useCallback(() => {
+    startTransition(async () => {
+      try {
+        await logout();
+        setIsAuthenticated(false);
+        setIsLogoutModalOpen(false);
+        toast.success("Logged out successfully!");
+        navigate("/auth");
+      } catch (error) {
+        toast.error("Logout failed. Please try again.");
+      }
     });
-
-  };
+  }, [navigate, setIsAuthenticated]);
 
 
 
@@ -103,7 +92,7 @@ const Header = () => {
 
 
 
-    }, [isLogoutModalOpen]);
+    }, [isLogoutModalOpen, handleLogout]);
 
 
 
@@ -223,7 +212,7 @@ const Header = () => {
                     <Button variant="outline" onClick={() => setIsLogoutModalOpen(false)}>
                       Cancel
                     </Button>
-                    <Button variant="destructive" onClick={handleLogout} disabled={loading}>
+                    <Button variant="destructive" onClick={handleLogout} disabled={isPending}>
                       Logout
                     </Button>
                   </DialogFooter>
@@ -233,7 +222,7 @@ const Header = () => {
           )}
         </div>
       </nav>
-      {loading && <BarLoader width={"100%"} color="#36d7b7" />}
+      {isPending && <BarLoader width={"100%"} color="#36d7b7" />}
     </header>
   );
 };

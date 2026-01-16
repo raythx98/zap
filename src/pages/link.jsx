@@ -3,13 +3,13 @@ import Location from "@/components/location-stats";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {deleteUrl, getUrl} from "@/api/apiUrls";
-import useFetch from "@/hooks/use-fetch";
 import {Copy, QrCode, LinkIcon, Trash, Calendar} from "lucide-react";
-import {useEffect, useState} from "react";
+import {useEffect, useState, useTransition, useCallback} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {BarLoader, BeatLoader} from "react-spinners";
+import {BarLoader, BeatLoader} from "@/components/ui/loaders";
 import {QRCode} from "react-qrcode-logo";
 import { toast } from "sonner";
+import { downloadImage } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -19,25 +19,32 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import Error from "../components/error";
 
 
 const LinkPage = () => {
   const navigate = useNavigate();
   const {id} = useParams();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const {
-    loading,
-    data,
-    fn,
-    error,
-  } = useFetch(getUrl, {id});
+  const [isPendingDelete, startTransition] = useTransition();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const {loading: loadingDelete, fn: fnDelete} = useFetch(deleteUrl, id);
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await getUrl({id});
+      setData(res);
+    } catch (err) {
+      console.error(err);
+    }
+    finally {
+      setLoading(false);
+    }
+  }, [id]);
 
   useEffect(() => {
-    fn();
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -49,6 +56,18 @@ const LinkPage = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [navigate]);
 
+  const handleDelete = useCallback(() => {
+    startTransition(async () => {
+      try {
+        await deleteUrl(id);
+        navigate("/dashboard");
+        toast.success("Link deleted successfully!");
+      } catch (error) {
+        // Error already toasted by parseError in API layer
+      }
+    });
+  }, [id, navigate]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Enter" && isDeleteModalOpen) {
@@ -59,34 +78,14 @@ const LinkPage = () => {
       window.addEventListener("keydown", handleKeyDown);
     }
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDeleteModalOpen]);
+  }, [isDeleteModalOpen, handleDelete]);
 
-  let link = "";
-  if (data?.url) {
-    link = data?.url?.custom_url ? data?.url?.custom_url : data?.url.short_url;
-  }
+  const link = data?.url?.custom_url || data?.url?.short_url || "";
   const fullLink = `${window.location.origin}${import.meta.env.BASE_URL}${link}`;
 
-  const downloadImage = () => {
-    const canvas = document.getElementById("qr-code-canvas");
-    if (canvas) {
-      const pngUrl = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.href = pngUrl;
-      downloadLink.download = `${data?.url?.title || "qr-code"}.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      toast.success("QR Code downloaded successfully!");
-    }
-  };
-
-  const handleDelete = () => {
-    fnDelete().then(() => {
-      navigate("/dashboard");
-      toast.success("Link deleted successfully!");
-    });
-  };
+  const handleDownload = useCallback(() => {
+    downloadImage("qr-code-canvas", data?.url?.title || "qr-code");
+  }, [data]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -152,7 +151,7 @@ const LinkPage = () => {
                 variant="secondary" 
                 size="icon"
                 className="h-12 w-12 rounded-full hover:bg-green-600 hover:text-white transition-all shadow-md"
-                onClick={downloadImage}
+                onClick={handleDownload}
               >
                 <QrCode className="h-5 w-5" />
               </Button>
@@ -178,8 +177,8 @@ const LinkPage = () => {
                     <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
                       Cancel
                     </Button>
-                    <Button variant="destructive" onClick={handleDelete} disabled={loadingDelete}>
-                      {loadingDelete ? <BeatLoader size={5} color="white" /> : "Delete"}
+                    <Button variant="destructive" onClick={handleDelete} disabled={isPendingDelete}>
+                      {isPendingDelete ? <BeatLoader size={5} color="white" /> : "Delete"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
